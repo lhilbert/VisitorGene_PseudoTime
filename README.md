@@ -1,6 +1,6 @@
-# NuclearObjects_ImageAnalysis
+# Visitor Gene Pseudo Time
 
-MatLab scripts for image analysis of objects inside cell nuclei
+MatLab scripts for the reconstruction of pseudo-time lapses of gene-cluster visits from fluorescence microscopy data obtained from fixed (non-living) samples
 
 Currently, the repository contains the scripts for extracting and analyzing Nikon .nd2 files with multiple XY positions in them.
 
