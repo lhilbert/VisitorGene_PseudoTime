@@ -1,13 +1,13 @@
 clear all
 
-sourceDirectory = './ExtractedStacks_Stages/**/';
+sourceDirectory = './ExtractedStacks/**/';
 
 % Channels for segmentation
-NucSegChannel = 3;
-ClusterSegChannel = 3;
-OPSegChannel = 1;
+NucSegChannel = 2;
+ClusterSegChannel = 2;
+OPSegChannel = 3;
 
-quantChannels = [3,2,OPSegChannel];
+quantChannels = [1,2,3];
 quantBlurSigma = [0,0,0.07];
 
 segBlurSigma_small = 1.0; % in microns
@@ -62,9 +62,12 @@ OP_displCell = cell(1,numFiles);
 pixelSize_array = zeros(1,numFiles);
 zStep_array = zeros(1,numFiles);
 
+validFileFlags = false(1,numFiles);
+
 numQuantChannels = numel(quantChannels);
 
-parfor ff = 1:numFiles
+for ff = 1:numFiles
+%parfor ff = 1:numFiles
 	
 	fprintf('Processing file %d of %d\n',ff,numFiles)
 	
@@ -91,15 +94,18 @@ parfor ff = 1:numFiles
 	[nuc_seg_thresh,~] = otsuLimit(bin_centers,bin_counts,[0,Inf]);
 	NucSegMask = segImg>1.0.*nuc_seg_thresh;
 	
-	subplot(1,3,1)
+    figure(1)
+    clf
+
+	subplot(2,3,1)
 	imagesc(squeeze(imgStack{NucSegChannel}(:,:,ceil(imgSize(3)./2))))
 	axis tight equal
 	
-	subplot(1,3,2)
+	subplot(2,3,2)
 	imagesc(squeeze(segImg(:,:,ceil(imgSize(3)./2))))
 	axis tight equal
 
-	subplot(1,3,3)
+	subplot(2,3,3)
 	imagesc(squeeze(NucSegMask(:,:,ceil(imgSize(3)./2))))
 	axis tight equal
 	
@@ -117,25 +123,40 @@ parfor ff = 1:numFiles
 		'Solidity');
 	
 	Solidity_array = [props.Solidity];
-	
 	comps.NumObjects = sum(Solidity_array>=Nuc_min_sol);
-	comps.PixelIdxList = comps.PixelIdxList(Solidity_array>=Nuc_min_sol);
-	numPxls = cellfun(@(elmt)numel(elmt),comps.PixelIdxList);
-	
-	props = regionprops3(comps,imgStack{NucSegChannel},...
-		'Volume','VoxelValues','Solidity','VoxelIdxList',...
-		'BoundingBox');
-	
-	Volume_array = [props.Volume].*pixelSize.^2.*zStepSize;
-	Intensity_array = cellfun(@(vals)median(vals),props.VoxelValues);
-	Solidity_array = [props.Solidity];
-	
-	
-	numNuclei = numel(Intensity_array);
+
+    if comps.NumObjects == 0
+        % If no valid nuclei are deteced, record empty vectors
+
+        Volume_array = [];
+    	Intensity_array = [];
+    	Solidity_array = [];
+    	numNuclei = 0;
+
+    else
+        % If no valid nuclei are detected, record their properties
+
+    	comps.PixelIdxList = comps.PixelIdxList(Solidity_array>=Nuc_min_sol);
+    	numPxls = cellfun(@(elmt)numel(elmt),comps.PixelIdxList);
+
+    	props = regionprops3(comps,imgStack{NucSegChannel},...
+    		'Volume','VoxelValues','Solidity','VoxelIdxList',...
+    		'BoundingBox');
+
+    	Volume_array = [props.Volume].*pixelSize.^2.*zStepSize;
+    	Intensity_array = cellfun(@(vals)median(vals),props.VoxelValues);
+    	Solidity_array = [props.Solidity];
+    	numNuclei = numel(Intensity_array);
+
+    end
 	
 	numNuclei_vec(ff) = numNuclei;
 	
 	% --- For each nucleus, get clusters and oligopaints
+    % The case of no nuclei detected is automatically covered by the
+    % following code. If there are no nuclei, veftors and cells of length 0
+    % will be saved, and no iteration will be carried out, so that the case
+    % is treated accurately.
 	
 	Cluster_img = imgStack{ClusterSegChannel};
 	OP_img = imgStack{OPSegChannel};
@@ -191,7 +212,10 @@ parfor ff = 1:numFiles
 		subImgSize = size(Cluster_subImage);
 		if numel(subImgSize)==2
 			subImgSize(3)=1;
-		else
+        else
+
+            figure(2)
+            clf
 			subplot(2,2,1)
 			imagesc(squeeze(max(Cluster_subImage,[],3)))
 			axis tight equal
@@ -378,7 +402,92 @@ parfor ff = 1:numFiles
 	OP_intCell{ff} = cell(1,numQuantChannels);
 	for qq = 1:numQuantChannels
 		OP_intCell{ff}{qq} = vertcat(OP_intensity{qq,:});
-	end
+    end
+
+    figure(1)
+
+
+
+    
+    subplot(2,3,4)
+    % Count of OP detections per nucleus
+
+    OP_countPerNucleus = ...
+        cellfun(@(vals)numel(vals),Cluster_OP_dist);
+    binCounts = histcounts(OP_countPerNucleus,[-0.5:1:12.5]);
+
+    fractionAboveFour = ...
+        sum(OP_countPerNucleus>4)...
+        ./numel(OP_countPerNucleus);
+
+    bar(0:12,binCounts,'FaceColor',[0.5,0.5,0.5],'EdgeColor',[0,0,0],...
+        'LineWidth',1)
+    set(gca,'XTick',0:12)
+    xlabel('FISH spots per nucleus')
+    ylabel('Count')
+    title(sprintf('Fraction above 4 spots: %2.2f (%s)',...
+        fractionAboveFour,condNames{ff}))
+   
+
+
+
+
+    subplot(2,3,5)
+    % Cross talk assessment within OP foci
+    dist_threshold = 0.25;
+    inContact_inds = Cluster_distCell{ff}<=dist_threshold;
+    plot(OP_intCell{ff}{ClusterSegChannel}(inContact_inds),...
+        OP_intCell{ff}{OPSegChannel}(inContact_inds),'ko',...
+        'MarkerEdgeColor','none','MarkerFaceColor',[1,0,0])
+    hold on
+    
+    plot(OP_intCell{ff}{ClusterSegChannel},...
+        OP_intCell{ff}{OPSegChannel},...
+        'ko')
+
+    hold on
+    
+    xlabel('Pol II Ser5P Intensity (a.u.)')
+    ylabel('OP Intensity (a.u.)')
+    title(sprintf('%d OP foci from %d nuclei',...
+        numel(Cluster_distCell{ff}),numNuclei_vec(ff)))
+    %set(gca,'XLim',[0,3],'YLim',[0,3])
+    hold on
+    plot([0,3],[0,3],'k-','LineWidth',1.5)
+    hold off
+
+    subplot(2,3,6)
+    % Cross talk assessment within Pol II Ser5P clusters
+    plot(Cluster_intCell{ff}{ClusterSegChannel}(inContact_inds),...
+        Cluster_intCell{ff}{OPSegChannel}(inContact_inds),'ko',...
+        'MarkerEdgeColor','none','MarkerFaceColor',[1,0,0])
+    hold on
+    
+    plot(Cluster_intCell{ff}{ClusterSegChannel},...
+        Cluster_intCell{ff}{OPSegChannel},...
+        'ko')
+
+    hold on
+    
+    xlabel('Pol II Ser5P Intensity (a.u.)')
+    ylabel('OP Intensity (a.u.)')
+    title(sprintf('Nearest neighbor Pol II clusters',...
+        numel(Cluster_distCell{ff}),numNuclei_vec(ff)))
+    %set(gca,'XLim',[0,3],'YLim',[0,3])
+    hold on
+    plot([0,3],[0,3],'k-','LineWidth',1.5)
+    hold off
+
+
+    if numNuclei_vec(ff)>0
+        waitforbuttonpress
+    end
+
+    if fractionAboveFour > 0.15
+        validFileFlags(ff) = false
+    else
+        validFileFlags(ff) = true;
+    end
 	
 end
 
