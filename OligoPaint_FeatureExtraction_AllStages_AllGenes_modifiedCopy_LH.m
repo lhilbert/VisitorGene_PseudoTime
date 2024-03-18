@@ -27,6 +27,20 @@ OP_minVol = 0.05; % cubic microns
 
 centralSliceExtension = 0; % pixels from centroid
 
+
+% ------end of analysis parameters
+
+% Get number of parallel workers
+
+p = gcp('nocreate'); % If no pool, do not create new one.
+if isempty(p)
+    poolsize = 0;
+else
+    poolsize = p.NumWorkers;
+end
+
+
+
 listing = rdir([sourceDirectory,'*Image*.mat']);
 
 numFiles = numel(listing);
@@ -66,8 +80,8 @@ validFileFlags = false(1,numFiles);
 
 numQuantChannels = numel(quantChannels);
 
-for ff = 1:numFiles
-%parfor ff = 1:numFiles
+%for ff = 1:numFiles
+parfor ff = 1:numFiles
 	
 	fprintf('Processing file %d of %d\n',ff,numFiles)
 	
@@ -479,7 +493,7 @@ for ff = 1:numFiles
     hold off
 
 
-    if numNuclei_vec(ff)>0
+    if numNuclei_vec(ff)>0 && poolsize == 0
         waitforbuttonpress
     end
 
@@ -513,21 +527,25 @@ sortedZStep = zeros(1,numConds);
 
 for cc = 1:numConds
 	
+    validCondInds = ...
+        condInds==uniqueCondInds(cc) ...
+        & validFileFlags;
+
 	sortedCondNames{cc} = ...
-		condNames(condInds==uniqueCondInds(cc));
+		condNames(validCondInds);
 	sortedCondNames{cc} = sortedCondNames{cc}{1};
 	
 	sortedNumNuclei(cc) = ...
-		sum(numNuclei_vec(condInds==uniqueCondInds(cc)));
-	sortedNumFiles(cc) = sum(condInds==uniqueCondInds(cc));
+		sum(numNuclei_vec(validCondInds));
+	sortedNumFiles(cc) = sum(validCondInds);
 	
-	Cluster_dists = vertcat(Cluster_distCell{condInds==uniqueCondInds(cc)});
-	Cluster_vols = vertcat(Cluster_volCell{condInds==uniqueCondInds(cc)});
-	Cluster_sols = vertcat(Cluster_solCell{condInds==uniqueCondInds(cc)});
-	Cluster_elos = vertcat(Cluster_eloCell{condInds==uniqueCondInds(cc)});
-	Cluster_masks = vertcat(Cluster_maskCell{condInds==uniqueCondInds(cc)});
-	Cluster_ints = Cluster_intCell(condInds==uniqueCondInds(cc));
-	OP_ints = OP_intCell(condInds==uniqueCondInds(cc));
+	Cluster_dists = vertcat(Cluster_distCell{validCondInds});
+	Cluster_vols = vertcat(Cluster_volCell{validCondInds});
+	Cluster_sols = vertcat(Cluster_solCell{validCondInds});
+	Cluster_elos = vertcat(Cluster_eloCell{validCondInds});
+	Cluster_masks = vertcat(Cluster_maskCell{validCondInds});
+	Cluster_ints = Cluster_intCell(validCondInds);
+	OP_ints = OP_intCell(validCondInds);
 
 	sortedDistCell{cc} = Cluster_dists;
 	sortedVolCell{cc} = Cluster_vols;
@@ -535,8 +553,8 @@ for cc = 1:numConds
 	sortedEloCell{cc} = Cluster_elos;
 	sortedMaskCell{cc} = Cluster_masks;
 
-	pixelSizes = pixelSize_array(condInds==uniqueCondInds(cc));
-	zStepSizes = zStep_array(condInds==uniqueCondInds(cc));
+	pixelSizes = pixelSize_array(validCondInds);
+	zStepSizes = zStep_array(validCondInds);
 	
 	sortedPixelSize(cc) = pixelSizes(1);
 	sortedZStep(cc) = zStepSizes(1);
@@ -545,12 +563,12 @@ for cc = 1:numConds
 		
 		sortedOPIntCell{qq}{cc} = vertcat(arrayfun(...
 			@(ind)OP_intCell{ind}{qq},....
-			find(condInds==uniqueCondInds(cc)),...
+			find(validCondInds),...
 			'UniformOutput',false));
 		sortedOPIntCell{qq}{cc} = vertcat(sortedOPIntCell{qq}{cc}{:});
 		sortedIntCell{qq}{cc} = vertcat(arrayfun(...
 			@(ind)Cluster_intCell{ind}{qq},....
-			find(condInds==uniqueCondInds(cc)),...
+			find(validCondInds),...
 			'UniformOutput',false));
 		sortedIntCell{qq}{cc} = vertcat(sortedIntCell{qq}{cc}{:});
 
