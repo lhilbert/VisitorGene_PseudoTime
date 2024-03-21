@@ -505,6 +505,27 @@ parfor ff = 1:numFiles
 	
 end
 
+%% Report conditions from which data was rejected
+
+invalidInds = find(~validFileFlags);
+numInvalid = numel(invalidInds);
+
+if numInvalid>0
+
+    disp('There were files rejected during oligopaint quality control:')
+
+    for ff = 1:numInvalid
+
+        disp(' ')
+        disp('Condition:')
+        disp(condNames{invalidInds(ff)})
+        disp('File name:')
+        disp(listing(ff).name)
+
+    end
+
+end
+
 %% Sort into conditions
 
 sortedCondNames = cell(1,numConds);
