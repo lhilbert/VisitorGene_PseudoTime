@@ -7,6 +7,11 @@ NucSegChannel = 2;
 ClusterSegChannel = 2;
 OPSegChannel = 3;
 
+% The channels must be assigned so that the they represent the following
+% labels in the biological sample:
+% Channel 1: Elongating Pol II, Pol II Ser2Phos
+% Channel 2: Recruited Pol II, Pol II Ser5Phos
+% Channel 3: Oligopaint DNA-FISH labeling of the gene of interest
 quantChannels = [1,2,3];
 quantBlurSigma = [0,0,0.07];
 
