@@ -55,6 +55,9 @@ for ff = 1:numFiles
     thisCondName = condNames{ff};
 	thisFilePath = listing(ff).name;
 	
+    fprintf('Condition name saved in file: %s\n',thisCondName)
+    
+
 	loadStruct = load(thisFilePath,...
 		'imgStack','imgSize','pixelSize','zStepSize');
 	imgStack = loadStruct.imgStack;
