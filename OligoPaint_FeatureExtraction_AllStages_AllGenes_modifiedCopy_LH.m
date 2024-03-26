@@ -235,19 +235,27 @@ parfor ff = 1:numFiles
 
             figure(2)
             clf
-			subplot(2,2,1)
+
+            subplot(2,3,1)
+            imagesc(squeeze(max(NucMask_subImage,[],3)))
+			axis tight equal
+            title('Nuclear segmentation')
+			
+			subplot(2,3,2)
 			imagesc(squeeze(max(Cluster_subImage,[],3)))
 			axis tight equal
+            title('Pol II Ser5P cluster')
 			
-			subplot(2,2,2)
+			subplot(2,3,3)
 			imagesc(squeeze(max(OP_subImage,[],3)))
 			axis tight equal
+            title('Oligopaint')
 			
-			subplot(2,2,3)
+			subplot(2,3,5)
 			imagesc(squeeze(max(Cluster_mask,[],3)))
 			axis tight equal
 
-			subplot(2,2,4)
+			subplot(2,3,6)
 			imagesc(squeeze(max(OP_mask,[],3)))
 			axis tight equal
 
