@@ -18,17 +18,19 @@ quantBlurSigma = [0,0,0.07];
 segBlurSigma_small = 1.0; % in microns
 segBlurSigma_large = 10; % in microns
 
-clusterSegBlurSigma_large = 3.0;
-clusterSeg_numStdDev = 2.0;%5;
+clusterSegBlurSigma_large = 0.5;
+clusterSeg_numStdDev = 3.0;%5;
 
-OPsegBlurSigma_small = 0.1; % in microns
-OPsegBlurSigma_large = 5; % in microns
-OPseg_numStdDev = 6; % number of standard deviations in robust threshold
+OPsegBlurSigma_small = 0.07; % in microns
+OPsegBlurSigma_large = 0.3; % in microns
+OPseg_numStdDev = 5; % number of standard deviations in robust threshold
 
 Nuc_min_vol = 40; % cubic microns
 Nuc_min_sol = 0.7; % to ensure round nuclei
 Cluster_minVol = 0.03;
 OP_minVol = 0.05; % cubic microns
+
+dist_threshold = 0.5;0.25; % contact distance in micrometers
 
 centralSliceExtension = 0; % pixels from centroid
 
@@ -113,23 +115,6 @@ parfor ff = 1:numFiles
 	[nuc_seg_thresh,~] = otsuLimit(bin_centers,bin_counts,[0,Inf]);
 	NucSegMask = segImg>1.0.*nuc_seg_thresh;
 	
-    figure(1)
-    clf
-
-	subplot(2,3,1)
-	imagesc(squeeze(imgStack{NucSegChannel}(:,:,ceil(imgSize(3)./2))))
-	axis tight equal
-	
-	subplot(2,3,2)
-	imagesc(squeeze(segImg(:,:,ceil(imgSize(3)./2))))
-	axis tight equal
-
-	subplot(2,3,3)
-	imagesc(squeeze(NucSegMask(:,:,ceil(imgSize(3)./2))))
-	axis tight equal
-	
-% 	waitforbuttonpress
-	
 	% --- Connected component segmentation of nuclei
 	comps = bwconncomp(NucSegMask,18);
 	numPxls = cellfun(@(elmt)numel(elmt),comps.PixelIdxList);
@@ -153,7 +138,7 @@ parfor ff = 1:numFiles
     	numNuclei = 0;
 
     else
-        % If no valid nuclei are detected, record their properties
+        % If valid nuclei are detected, record their properties
 
     	comps.PixelIdxList = comps.PixelIdxList(Solidity_array>=Nuc_min_sol);
     	numPxls = cellfun(@(elmt)numel(elmt),comps.PixelIdxList);
@@ -191,6 +176,61 @@ parfor ff = 1:numFiles
 	for nn = 1:numNuclei
 		
 		boxArray = props.BoundingBox(nn,:);
+        y1=boxArray(2).*pixelSize;
+        y2=(boxArray(2)+boxArray(5)).*pixelSize;
+        x1=boxArray(1).*pixelSize;
+        x2=(boxArray(1)+boxArray(4)).*pixelSize;
+
+        showZSlice = round(boxArray(3)+0.5.*boxArray(6));
+        if showZSlice==0
+            showZSlice=1;
+        end
+        
+        figure(1)
+        clf
+
+    	subplot(3,3,1)
+    	imagesc(...
+            [0,imgSize(2)].*pixelSize,...
+            [0,imgSize(1)].*pixelSize,...
+            squeeze(imgStack{NucSegChannel}(:,:,showZSlice)))
+        axis tight equal
+        xlabel('x [\mum]')
+        ylabel('y [\mum]')
+        title('Segmentation channel')
+        hold on
+        plot([x1,x2,x2,x1,x1],...
+            [y1,y1,y2,y2,y1],'w-')
+
+        
+    	subplot(3,3,2)
+    	imagesc(...
+            [0,imgSize(2)].*pixelSize,...
+            [0,imgSize(1)].*pixelSize,...
+            squeeze(segImg(:,:,showZSlice)))
+    	axis tight equal
+        xlabel('x [\mum]')
+        ylabel('y [\mum]')
+        title('Preprocessed')
+        hold on
+        plot([x1,x2,x2,x1,x1],...
+            [y1,y1,y2,y2,y1],'w-')
+
+
+    	subplot(3,3,3)
+    	imagesc(...
+            [0,imgSize(2)].*pixelSize,...
+            [0,imgSize(1)].*pixelSize,...
+            squeeze(NucSegMask(:,:,showZSlice)))
+    	axis tight equal
+    	xlabel('x [\mum]')
+        ylabel('y [\mum]')
+        title('Segmentation mask')
+        hold on
+        plot([x1,x2,x2,x1,x1],...
+            [y1,y1,y2,y2,y1],'w-')
+
+
 		Cluster_subImage = imgStack{NucSegChannel}(...
 			boxArray(2)+0.5:boxArray(2)+boxArray(5)-0.5,...
 			boxArray(1)+0.5:boxArray(1)+boxArray(4)-0.5,...
@@ -199,6 +239,12 @@ parfor ff = 1:numFiles
 			boxArray(2)+0.5:boxArray(2)+boxArray(5)-0.5,...
 			boxArray(1)+0.5:boxArray(1)+boxArray(4)-0.5,...
 			boxArray(3)+0.5:boxArray(3)+boxArray(6)-0.5);
+
+        subImgSize = size(Cluster_subImage);
+        if numel(subImgSize)==2
+            % This is here in case we are facing 2D data
+            subImgSize(3)=1;
+        end
 		
 		Cluster_subImage = Cluster_subImage ...
 			- imgaussfilt(Cluster_subImage,...
@@ -227,42 +273,7 @@ parfor ff = 1:numFiles
 		OP_std = std(OP_intensities);
 		OP_mask = (OP_subImage.*NucMask_subImage)...
 			>(OP_mean+OPseg_numStdDev.*OP_std);
-		
-		subImgSize = size(Cluster_subImage);
-		if numel(subImgSize)==2
-			subImgSize(3)=1;
-        else
 
-            figure(2)
-            clf
-
-            subplot(2,3,1)
-            imagesc(squeeze(max(NucMask_subImage,[],3)))
-			axis tight equal
-            title('Nuclear segmentation')
-			
-			subplot(2,3,2)
-			imagesc(squeeze(max(Cluster_subImage,[],3)))
-			axis tight equal
-            title('Pol II Ser5P cluster')
-			
-			subplot(2,3,3)
-			imagesc(squeeze(max(OP_subImage,[],3)))
-			axis tight equal
-            title('Oligopaint')
-			
-			subplot(2,3,5)
-			imagesc(squeeze(max(Cluster_mask,[],3)))
-			axis tight equal
-
-			subplot(2,3,6)
-			imagesc(squeeze(max(OP_mask,[],3)))
-			axis tight equal
-
-		end
-				
-% 		waitforbuttonpress
-		
 		OP_comps = bwconncomp(OP_mask,18);
 		OP_numPxls = cellfun(@(elmt)numel(elmt),OP_comps.PixelIdxList);
 		minPixels = OP_minVol./(pixelSize.^2)./zStepSize;
@@ -413,8 +424,111 @@ parfor ff = 1:numFiles
 				OP_intensity{qq,nn} = [];
 			end
 			
-		end
+        end
 		
+       %Plotting of z-projected data with OP detection and segmentation
+       %masks. If you want this displayed, deactivate parallel processing
+       %and also uncomment the waitforbuttonpress at the end of this
+       %plotting section.
+
+       figure(1)
+
+       subplot(3,3,4)
+       
+       imagesc(...
+           [0,subImgSize(2)].*pixelSize,...
+           [0,subImgSize(1)].*pixelSize,...
+           squeeze(max(NucMask_subImage,[],3)))
+       axis tight equal
+       xlabel('x [\mum]')
+       ylabel('y [\mum]')
+       title('Nuclear segmentation')
+
+       subplot(3,3,5)
+       imagesc(...
+           [0,subImgSize(2)].*pixelSize,...
+           [0,subImgSize(1)].*pixelSize,...
+           squeeze(max(Cluster_subImage,[],3)))
+       axis tight equal
+       xlabel('x [\mum]')
+       ylabel('y [\mum]')
+       title('Pol II Ser5P cluster')
+
+       subplot(3,3,6)
+       imagesc(...
+           [0,subImgSize(2)].*pixelSize,...
+           [0,subImgSize(1)].*pixelSize,...
+           squeeze(max(OP_subImage,[],3)))
+       axis tight equal
+       xlabel('x [\mum]')
+       ylabel('y [\mum]')
+       title(sprintf('Oligopaint (%s)',...
+           condNames{ff}))
+
+       subplot(3,3,8)
+       imagesc(...
+           [0,subImgSize(2)].*pixelSize,...
+           [0,subImgSize(1)].*pixelSize,...
+           squeeze(max(Cluster_mask,[],3)))
+       xlabel('x [\mum]')
+       ylabel('y [\mum]')
+       axis tight equal
+
+       subplot(3,3,9)
+       imagesc(...
+           [0,subImgSize(2)].*pixelSize,...
+           [0,subImgSize(1)].*pixelSize,...
+           squeeze(max(OP_mask,[],3)))
+       xlabel('x [\mum]')
+       ylabel('y [\mum]')
+       axis tight equal
+       title(sprintf('Oligopaint (%d detected)',...
+           OP_comps.NumObjects))
+
+
+       if OP_comps.NumObjects>0
+
+           markerSize = 12;
+
+           OP_centroids = ...
+               OP_props.Centroid.*[pixelSize,pixelSize,zStepSize];
+           
+           subplot(3,3,5)
+           hold on
+           plot(OP_centroids(:,1),OP_centroids(:,2),'k+',...
+               'MarkerSize',markerSize)
+           plot(OP_centroids(:,1),OP_centroids(:,2),'ws',...
+               'MarkerSize',markerSize)
+           hold off
+
+           subplot(3,3,8)
+           hold on
+           plot(OP_centroids(:,1),OP_centroids(:,2),'k+',...
+               'MarkerSize',markerSize)
+           plot(OP_centroids(:,1),OP_centroids(:,2),'ws',...
+               'MarkerSize',markerSize)
+           hold off
+                  
+           subplot(3,3,6)
+           hold on
+           plot(OP_centroids(:,1),OP_centroids(:,2),'k+',...
+               'MarkerSize',markerSize)
+           plot(OP_centroids(:,1),OP_centroids(:,2),'ws',...
+               'MarkerSize',markerSize)
+           hold off
+
+           subplot(3,3,9)
+           hold on
+           plot(OP_centroids(:,1),OP_centroids(:,2),'k+',...
+               'MarkerSize',markerSize)
+           plot(OP_centroids(:,1),OP_centroids(:,2),'ws',...
+               'MarkerSize',markerSize)
+           hold off
+       
+       end
+
+       %waitforbuttonpress % uncomment this if you want image outputs
+
 	end
 	
 	Cluster_distCell{ff} = vertcat(Cluster_OP_dist{:});
@@ -431,12 +545,10 @@ parfor ff = 1:numFiles
 		OP_intCell{ff}{qq} = vertcat(OP_intensity{qq,:});
     end
 
-    figure(1)
+    figure(2)
+    clf
 
-
-
-    
-    subplot(2,3,4)
+    subplot(1,3,1)
     % Count of OP detections per nucleus
 
     OP_countPerNucleus = ...
@@ -459,9 +571,8 @@ parfor ff = 1:numFiles
 
 
 
-    subplot(2,3,5)
+    subplot(1,3,2)
     % Cross talk assessment within OP foci
-    dist_threshold = 0.25;
     inContact_inds = Cluster_distCell{ff}<=dist_threshold;
     plot(OP_intCell{ff}{ClusterSegChannel}(inContact_inds),...
         OP_intCell{ff}{OPSegChannel}(inContact_inds),'ko',...
@@ -483,7 +594,7 @@ parfor ff = 1:numFiles
     plot([0,3],[0,3],'k-','LineWidth',1.5)
     hold off
 
-    subplot(2,3,6)
+    subplot(1,3,3)
     % Cross talk assessment within Pol II Ser5P clusters
     plot(Cluster_intCell{ff}{ClusterSegChannel}(inContact_inds),...
         Cluster_intCell{ff}{OPSegChannel}(inContact_inds),'ko',...
@@ -507,11 +618,11 @@ parfor ff = 1:numFiles
 
 
     if numNuclei_vec(ff)>0 && poolsize == 0
-        waitforbuttonpress
+        %waitforbuttonpress
     end
 
     if fractionAboveFour > 0.15
-        validFileFlags(ff) = false
+        validFileFlags(ff) = false;
     else
         validFileFlags(ff) = true;
     end
@@ -613,11 +724,8 @@ end
 
 %% Principal Component based sorting of observations
 
-% figure(1)
-% clf
-% 
-% figure(2)
-% clf
+figure(4)
+clf
 
 sorted_central_slices = cell(1,numConds);
 
@@ -628,7 +736,6 @@ radii_cell = cell(1,numConds);
 crossCorr_vals = zeros(1,numConds);
 crossCorr_CI = zeros(2,numConds);
 
-dist_threshold = 0.25;
 Vol_threshold = 0.2;
 angle_shift = -0.1;
 
@@ -655,15 +762,15 @@ for cc = 1:numConds
 
 	[ff,xx] = ksdensity(dist_vals,'BandWidth',0.07,'support','unbounded');
 	
-% 	subplot(4,numConds,0.*numConds+cc)
-% 	plot(xx,ff,'k-','LineWidth',1)
-% 	hold on
-% 	plot([1,1].*dist_threshold,[0,1],'k-','LineWidth',1)
-% 	xlabel('Gene-cluster distance')
-% 	ylabel('Probability')
-% 	title(sprintf('%s (n=%d)',...
-% 		sortedCondNames{cc},numel(sortedDistCell{cc})))
-% 	set(gca,'XLim',[-0.05,4.5])
+	subplot(4,numConds,0.*numConds+cc)
+	plot(xx,ff,'k-','LineWidth',1)
+	hold on
+	plot([1,1].*dist_threshold,[0,1],'k-','LineWidth',1)
+	xlabel('Gene-cluster distance')
+	ylabel('Probability')
+	title(sprintf('%s (n=%d)',...
+		sortedCondNames{cc},numel(sortedDistCell{cc})))
+	set(gca,'XLim',[-0.05,4.5])
 		
 	
 	% PCA, input: Rows of X are observations, columns to variables
@@ -691,18 +798,18 @@ for cc = 1:numConds
 	end
 	PCA_coeffs_plot = PCA_coeffs(:,PCA_order);
 	
-% 	subplot(4,numConds,1.*numConds+cc)
-% 	imagesc(PCA_coeffs_plot',[-1,+1])
-% 	
-% 	PCA_labels = arrayfun(@(nn) ...
-% 		sprintf('PC %d (%1.1f%%)',...
-% 		PCA_order(nn),PCA_percExplained(PCA_order(nn))),1:3,...
-% 		'UniformOutput',false);
-% 	set(gca,'YTick',1:3,'YTickLabel',PCA_labels)
-% 	
-% 	title(sprintf('f(d<%d nm)=%1.1f%%',...
-% 		dist_threshold.*1000,frac_close.*100),...
-% 		'FontWeight','normal')
+	subplot(4,numConds,1.*numConds+cc)
+	imagesc(PCA_coeffs_plot',[-1,+1])
+	
+	PCA_labels = arrayfun(@(nn) ...
+		sprintf('PC %d (%1.1f%%)',...
+		PCA_order(nn),PCA_percExplained(PCA_order(nn))),1:3,...
+		'UniformOutput',false);
+	set(gca,'YTick',1:3,'YTickLabel',PCA_labels)
+	
+	title(sprintf('f(d<%d nm)=%1.1f%%',...
+		dist_threshold.*1000,frac_close.*100),...
+		'FontWeight','normal')
 
 	
 	colormap_matrix = ones(65,3);
@@ -730,16 +837,16 @@ for cc = 1:numConds
 		mean(PCA_scores(Vol_topInds,1)),...
 		mean(PCA_scores(Vol_topInds,2))];
 	
-% 	subplot(4,numConds,2.*numConds+cc)
-% 	plot(PCA_scores(:,1),PCA_scores(:,2),'k.',...
-% 		'MarkerEdgeColor',[0.6,0.6,0.6])
-% 	hold on
-% 	plot([0,S5P_vec(1)],[0,S5P_vec(2)],'m-','LineWidth',1)
-% 	plot([0,Vol_vec(1)],[0,Vol_vec(2)],'b-','LineWidth',1)
-% 	xlabel(PCA_labels{1})
-% 	ylabel(PCA_labels{2})
-% 	axis equal
-% % 	set(gca,'XLim',[-6,3],'YLim',[-2,8])
+	subplot(4,numConds,2.*numConds+cc)
+	plot(PCA_scores(:,1),PCA_scores(:,2),'k.',...
+		'MarkerEdgeColor',[0.6,0.6,0.6])
+	hold on
+	plot([0,S5P_vec(1)],[0,S5P_vec(2)],'m-','LineWidth',1)
+	plot([0,Vol_vec(1)],[0,Vol_vec(2)],'b-','LineWidth',1)
+	xlabel(PCA_labels{1})
+	ylabel(PCA_labels{2})
+	axis equal
+% 	set(gca,'XLim',[-6,3],'YLim',[-2,8])
 
 	if S5P_vec(2)>0
 		Vol_ortho_vec = Vol_vec*[0,-1;+1,0];
@@ -759,16 +866,16 @@ for cc = 1:numConds
 	trafo_S5P_vec = S5P_vec*Trafo_matrix;	
 	
 	
-% 	subplot(4,numConds,3.*numConds+cc)
-% 	plot(trafo_scores(:,1),trafo_scores(:,2),'k.',...
-% 		'MarkerEdgeColor',[0.6,0.6,0.6])
-% 	hold on
-% 	plot([0,trafo_S5P_vec(1)],[0,trafo_S5P_vec(2)],'m-','LineWidth',1)
-% 	plot([0,trafo_Vol_vec(1)],[0,trafo_Vol_vec(2)],'b-','LineWidth',1)
-% 	xlabel('Transformed 1')
-% 	ylabel('Transformed 2')
-% 	axis equal
-% 	set(gca,'XLim',[-6,3],'YLim',[-2,8])
+	subplot(4,numConds,3.*numConds+cc)
+	plot(trafo_scores(:,1),trafo_scores(:,2),'k.',...
+		'MarkerEdgeColor',[0.6,0.6,0.6])
+	hold on
+	plot([0,trafo_S5P_vec(1)],[0,trafo_S5P_vec(2)],'m-','LineWidth',1)
+	plot([0,trafo_Vol_vec(1)],[0,trafo_Vol_vec(2)],'b-','LineWidth',1)
+	xlabel('Transformed 1')
+	ylabel('Transformed 2')
+	axis equal
+	set(gca,'XLim',[-6,3],'YLim',[-2,8])
 	
 	angles = -atan2(trafo_scores(:,2),trafo_scores(:,1))./2./pi; % in radians
 	angles = mod(angles,1);
@@ -1031,7 +1138,7 @@ for cc = 1:numConds
 	
 end
 
-figure(3)
+figure(5)
 clf
 
 errorbar(in_range_perc,crossCorr_vals,...
