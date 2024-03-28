@@ -29,15 +29,21 @@ Adding a directory to the MatLab path permanently:
 # Script sets
 
 Data extraction:
+
 MultiPosition_extraction_nd2.m
+
 ReviewExtractedStacks_Oligopaint.m
 
 Image analysis: 
+
 Segmentation_FeatureExtraction.m
 
 Downstream analysis and figures:
+
 PseudoTime_Trajectory.m
+
 GeneMap_Interpolation.m
+
 VisitorGene_PseudoTimeSorting.m
 
 # Example data set
