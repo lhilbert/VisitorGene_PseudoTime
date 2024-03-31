@@ -26,6 +26,26 @@ Adding a directory to the MatLab path permanently:
 3. Once you see that this is working, you can specify the cootents of the ClusterAnalysis.m file t fit the needs of your analysis and graphical outputs
 4. You can also try out ExampleImages.m, so you can prepare nice plots based on the extracted data
 
+# Script sets
+
+Data extraction:
+
+MultiPosition_extraction_nd2.m
+
+ReviewExtractedStacks_Oligopaint.m
+
+Image analysis: 
+
+Segmentation_FeatureExtraction.m
+
+Downstream analysis and figures:
+
+PseudoTime_Trajectory.m
+
+GeneMap_Interpolation.m
+
+VisitorGene_PseudoTimeSorting.m
+
 # Example data set
 
 A useful data set for an example analysis is provided by the Hilbert lab via Zenodo:
