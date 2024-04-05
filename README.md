@@ -52,11 +52,7 @@ VisitorGene_PseudoTimeSorting.m
 Example image data for oligopaint labeling of the gene klf2b is provided by the Hilbert lab via Zenodo:
 [https://zenodo.org/record/5268833](https://zenodo.org/records/5268833)
 
-First, create a folder called ImageData, which you place in the directory where you have saved the MatLab scripts. It is the easiest way to keep the scripts and data together in one and the same place.
-
-Second, inside the ImageData folder, create folders for several developmental stages, at least Oblong and Sphere, if you like also Dome, Epi_30, and Epi_50.
-
-[To be extended...]
+Create a folder called ImageData, which you place in the directory where you have saved the MatLab scripts. It is the easiest way to keep the scripts and data together in one and the same place. Inside the ImageData folder, create folders for several developmental stages: at least Oblong and Sphere, if you like also Dome, Epi_30, and Epi_50. Inside these folders, place the according .nd2 files that you downloaded from Zenodo (link above). When these files are placed in the folders, step 1 of the instructions above is complete, and you should proceed with the further steps.
 
 # Acknowledgments
 
