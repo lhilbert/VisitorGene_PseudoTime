@@ -21,10 +21,11 @@ Adding a directory to the MatLab path permanently:
 
 # Use instructions
 
-1. Specifiy which files should be extracted, and what color channels should be retained in MultiPosition_extraction_nd2.m. Then, run the script to oextract the raw data into .mat MatLab format data files
-2. Specify analysis parameters in ClusterAnalysis.m, then run the script to actually analyze your data
-3. Once you see that this is working, you can specify the cootents of the ClusterAnalysis.m file t fit the needs of your analysis and graphical outputs
-4. You can also try out ExampleImages.m, so you can prepare nice plots based on the extracted data
+1. Place all the imaging data you would like to process into directories that have a name that represents the according experimental conditions. These directory names lateron will serve as identifier names for the different conditions, so please choose well.
+2. In the script MultiPosition_extraction_nd2.m specifiy which experimental conditions should be extracted from which folders. This search is recursive, and finds all .nd2 files that are stoored within a given directorz as well as its subdirectories. In this file, you also should specify which color channel represents which label. The correct order is Pol II Ser2Phos, Pol II Ser5Phos, and oligopaint signal.
+3. you can use the script ReviewExtractedStacks_Oligopaint.m to review the etracted data. This is optional. Dat that are of insufficient technical quality can be removed from your hard drive in a targeted fashion based on this script, it indicates the file names for everything it shows.
+4. The actual image processing then is executed by the script Segmentation_FeatureExtraction.m. You can also adjust some of the analysis parameters to refine the analysis. You can also comment out parfor and uncomment the regular for expression, and uncomment waitforbuttonpress to review the analysis performance.
+5. Actual analysis results and figures can then be prudced with the downstream analysis scripts listed below.
 
 # Script sets
 
