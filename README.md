@@ -21,7 +21,7 @@ Adding a directory to the MatLab path permanently:
 
 # Use instructions
 
-1. Specifiy which files should be extracted, and what color channels should be retained in MultiPosition_extraction_nd2.m, then run the script to oextract the raw data into .mat MatLab format data files
+1. Specifiy which files should be extracted, and what color channels should be retained in MultiPosition_extraction_nd2.m. Then, run the script to oextract the raw data into .mat MatLab format data files
 2. Specify analysis parameters in ClusterAnalysis.m, then run the script to actually analyze your data
 3. Once you see that this is working, you can specify the cootents of the ClusterAnalysis.m file t fit the needs of your analysis and graphical outputs
 4. You can also try out ExampleImages.m, so you can prepare nice plots based on the extracted data
@@ -48,22 +48,14 @@ VisitorGene_PseudoTimeSorting.m
 
 # Example data set
 
-A useful data set for an example analysis is provided by the Hilbert lab via Zenodo:
-https://zenodo.org/record/5242952#.YZkwLy1Q1pQ
+Example image data for oligopaint labeling of the gene klf2b is provided by the Hilbert lab via Zenodo:
+[https://zenodo.org/record/5268833](https://zenodo.org/records/5268833)
 
 First, create a folder called ImageData, which you place in the directory where you have saved the MatLab scripts. It is the easiest way to keep the scripts and data together in one and the same place.
 
-Second, inside the ImageData folder, create two more folders, called Ctrl and FP.
+Second, inside the ImageData folder, create folders for several developmental stages, at least Oblong and Sphere, if you like also Dome, Epi_30, and Epi_50.
 
-In the Ctrl folder, store the following two files:
-
-https://zenodo.org/record/5242952/files/SetC_Control_004_crop.nd2?download=1
-https://zenodo.org/record/5242952/files/SetD_Control_007_crop.nd2?download=1
-
-In the FP folder, store the following two files:
-
-https://zenodo.org/record/5242952/files/SetC_Flavopiridol_005_crop.nd2?download=1
-https://zenodo.org/record/5242952/files/SetD_Flavopiridol_008_crop.nd2?download=1
+[To be extended...]
 
 # Acknowledgments
 
