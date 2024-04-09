@@ -64,7 +64,12 @@ skipList = [1:8,17:40]; % Directories to skip, for example if already done
 % Leave empty array [] if all directories shoudl be processed.
 % Current setting is to that all but the Sphere stage data are skipped.
 
-useChannel_inds = [3,1,2];
+% The channels must be assigned so that the they represent the following
+% labels in the biological sample:
+% Channel 1: Elongating Pol II, Pol II Ser2Phos
+% Channel 2: Recruited Pol II, Pol II Ser5Phos
+% Channel 3: Oligopaint DNA-FISH labeling of the gene of interest
+useChannel_inds = [1,2,3];
 numChannels = numel(useChannel_inds);
 scaleChannels = {[-Inf,Inf],[-Inf,Inf],[-Inf,Inf]};
 

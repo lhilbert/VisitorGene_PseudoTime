@@ -8,7 +8,7 @@ load('ConditionSortedResults')
 
 % Choose target gene and stage
 
-cc = 1;
+cc = 2;
 
 disp(sortedCondNames{cc})
 geneName = 'zgc';

@@ -1,6 +1,6 @@
 clear all
 
-sourceDirectory = './ExtractedStacks/**/';
+sourceDirectory = './ExtractedStacks_Stages/**/';
 
 % Channels for segmentation
 NucSegChannel = 2;
