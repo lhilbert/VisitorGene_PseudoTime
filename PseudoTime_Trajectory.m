@@ -8,51 +8,120 @@ load('ConditionSortedResults')
 
 % Choose target gene and stage
 
-cc = 2;
+target_cond = 8;
+all_conds = 1:numel(sortedCondNames);
+% all_conds = target_cond;
 
-disp(sortedCondNames{cc})
-geneName = 'zgc';
-Vol_threshold_pseudotime = 0.0;0.03;
-inclInds = sortedVolCell{cc}>=Vol_threshold_pseudotime;
+disp(sortedCondNames{target_cond})
 
-dist_vals = [sortedDistCell{cc}(inclInds)];
-OP_S5P_vals = [sortedOPIntCell{2}{cc}(inclInds)];
-OP_S2P_vals = [sortedOPIntCell{1}{cc}(inclInds)];
-%Add for third channel
-Cluster_S5P_vals = [sortedIntCell{2}{cc}(inclInds)];
-Cluster_S2P_vals = [sortedIntCell{1}{cc}(inclInds)];
-Vol_vals = [sortedVolCell{cc}(inclInds)];
-Elo_vals = [sortedEloCell{cc}(inclInds)];
-Sol_vals = [sortedSolCell{cc}(inclInds)];
-Central_slices = [sortedMaskCell{cc}(inclInds)];
+Vol_threshold_pseudotime = 0.0;
+
+dist_vals = [sortedDistCell{target_cond}];
+OP_S5P_vals = [sortedOPIntCell{2}{target_cond}];
+OP_S2P_vals = [sortedOPIntCell{1}{target_cond}];
+OP_OP_vals = [sortedOPIntCell{3}{target_cond}];
+Cluster_S5P_vals = [sortedIntCell{2}{target_cond}];
+Cluster_S2P_vals = [sortedIntCell{1}{target_cond}];
+Cluster_OP_vals = [sortedIntCell{3}{target_cond}];
+Vol_vals = [sortedVolCell{target_cond}];
+Elo_vals = [sortedEloCell{target_cond}];
+Sol_vals = [sortedSolCell{target_cond}];
+Central_slices = [sortedMaskCell{target_cond}];
+
+inclInds = Vol_vals>=Vol_threshold_pseudotime;
+
+dist_vals = dist_vals(inclInds);
+OP_S5P_vals = OP_S5P_vals(inclInds);
+OP_S2P_vals = OP_S2P_vals(inclInds);
+OP_OP_vals = OP_OP_vals(inclInds);
+Cluster_S5P_vals = Cluster_S5P_vals(inclInds);
+Cluster_S2P_vals = Cluster_S2P_vals(inclInds);
+Cluster_OP_vals = Cluster_OP_vals(inclInds);
+Vol_vals = Vol_vals(inclInds);
+Elo_vals = Elo_vals(inclInds);
+Sol_vals = Sol_vals(inclInds);
+Central_slices = Central_slices(inclInds);
+
+
+all_dist_vals = vertcat(sortedDistCell{all_conds});
+all_OP_S5P_vals = vertcat(sortedOPIntCell{2}{all_conds});
+all_OP_S2P_vals = vertcat(sortedOPIntCell{1}{all_conds});
+all_OP_OP_vals = vertcat(sortedOPIntCell{3}{all_conds});
+all_Cluster_S5P_vals = vertcat(sortedIntCell{2}{all_conds});
+all_Cluster_S2P_vals = vertcat(sortedIntCell{1}{all_conds});
+all_Cluster_OP_vals = vertcat(sortedIntCell{3}{all_conds});
+all_Vol_vals = vertcat(sortedVolCell{all_conds});
+all_Elo_vals = vertcat(sortedEloCell{all_conds});
+all_Sol_vals = vertcat(sortedSolCell{all_conds});
+all_Central_slices = vertcat(sortedMaskCell{all_conds});
+
+inclInds = all_Vol_vals>=Vol_threshold_pseudotime;
+
+all_dist_vals = all_dist_vals(inclInds);
+all_OP_S5P_vals = all_OP_S5P_vals(inclInds);
+all_OP_S2P_vals = all_OP_S2P_vals(inclInds);
+all_OP_OP_vals = all_OP_OP_vals(inclInds);
+all_Cluster_S5P_vals = all_Cluster_S5P_vals(inclInds);
+all_Cluster_S2P_vals = all_Cluster_S2P_vals(inclInds);
+all_Cluster_OP_vals = all_Cluster_OP_vals(inclInds);
+all_Vol_vals = all_Vol_vals(inclInds);
+all_Elo_vals = all_Elo_vals(inclInds);
+all_Sol_vals = all_Sol_vals(inclInds);
+all_Central_slices = all_Central_slices(inclInds);
+
+% Distance assessment
+
+prctlDist = prctile(dist_vals,5);
 
 % PCA, input: Rows of X are observations, columns the variables
 
 %Create observation matrix with all measured properties
-observationMatrix = [dist_vals,...
-    OP_S5P_vals,OP_S2P_vals, ...
-    Cluster_S5P_vals,Cluster_S2P_vals,...
+all_observationMatrix = [all_dist_vals,...
+    all_OP_S5P_vals,all_OP_S2P_vals,all_OP_OP_vals,...
+    all_Cluster_S5P_vals,all_Cluster_S2P_vals,all_Cluster_OP_vals,...
+    all_Vol_vals,all_Elo_vals,all_Sol_vals];
+target_observationMatrix = [dist_vals,...
+    OP_S5P_vals,OP_S2P_vals,OP_OP_vals,...
+    Cluster_S5P_vals,Cluster_S2P_vals,Cluster_OP_vals,...
     Vol_vals,Elo_vals,Sol_vals];
 
-%Perform PCA with three components
-[PCA_coeffs,PCA_scores,~,~,PCA_percExplained] = ...
-    pca(observationMatrix,...
+
+%Perform PCA with three components on overall data
+[PCA_coeffs,all_PCA_scores,~,~,PCA_percExplained] = ...
+    pca(all_observationMatrix,...
     'NumComponents',3);
 
-%Get maximal values
-[maxVal,maxInd] = max(abs(PCA_coeffs),[],2);
-[~,maxIndCluster] = max(PCA_coeffs(6,:));
+%Transform target data with same PCA projection
+[all_coeff, ~, ~, ~, ~, all_mu] = pca(all_observationMatrix,...
+    'NumComponents',3);
+% Center the new points
+target_Standardized = (target_observationMatrix - all_mu);
+% Project the new points onto the PCA axes
+target_PCA_scores = target_Standardized * all_coeff;
 
-maxValOP = max(abs(PCA_coeffs(1:3,:)),[],1);
-[~,maxIndOP] = max(maxValOP);
-maxIndOP = maxIndOP + (maxIndOP==maxIndCluster);
+resortFlag = true;
 
-%Set order for PCA (according to max vol cluster)
-PCA_order = [maxIndCluster,maxIndOP,...
-    setdiff([1,2,3],[maxIndCluster,maxIndOP])];
-if PCA_order(1) == PCA_order(2)
-    PCA_order = PCA_order(2:end);
+if resortFlag
+
+    % Get PC that holds most info on Distance changes
+    [~,maxIndDist] = max(abs(PCA_coeffs(1,:)));
+    % Get PC that holds most info on Cluster Elongation changes
+    [~,maxIndElo] = max(abs(PCA_coeffs(9,:)));
+
+    if maxIndElo == maxIndDist
+        maxIndElo = mod(maxIndDist+1,2);
+    end
+
+    %Set order for PCA (according to max vol cluster)
+    PCA_order = [maxIndDist,maxIndElo,...
+        setdiff([1,2,3],[maxIndDist,maxIndElo])];
+    if PCA_order(1) == PCA_order(2)
+        PCA_order = PCA_order(2:end);
+    end
+else
+    PCA_order = 1:3;
 end
+
 PCA_coeffs_plot = PCA_coeffs(:,PCA_order);
 
 figure(1);
@@ -60,7 +129,7 @@ clf
 
 subplot(1,4,1)
 imagesc(PCA_coeffs_plot',[-1,+1])
-%
+colorbar
 
 PCA_labels = arrayfun(@(nn) ...
     sprintf('PC %d (%1.1f%%)',...
@@ -68,103 +137,155 @@ PCA_labels = arrayfun(@(nn) ...
     'UniformOutput',false);
 
 set(gca,'YTick',1:3,'YTickLabel',PCA_labels)
-set(gca,'XTick',1:8,'XTickLabel',...
+set(gca,'XTick',1:10,'XTickLabel',...
     {'Distance',...
-    'OP Ser5P','OP Ser2P','Clus Ser5P','Clus Ser2P',...
+    'OP Ser5P','OP Ser2P','OP OP',...
+    'Clus Ser5P','Clus Ser2P','Clus OP',...
     'Clus Vol','Clus Elo','Clus Sol'})
-
-% title(sprintf('f(d<%d nm)=%1.1f%%',...
-%     dist_threshold.*1000,frac_close.*100),...
-%     'FontWeight','normal')
-
-% % 
-% % 	
-% %     %Define colormap matrix
-% % 	colormap_matrix = ones(65,3);
-% % 	colormap_matrix(1:33,2) = linspace(0,1,33);
-% % 	colormap_matrix(1:33,3) = linspace(0,1,33);
-% % 	colormap_matrix(33:65,1) = linspace(1,0,33);
-% % 	colormap_matrix(33:65,2) = linspace(1,0,33);
-% % 	colormap(colormap_matrix);
-% % 	
 
 %Order for first two components
 PCA_coeffs = PCA_coeffs(:,PCA_order([1,2]));
-PCA_scores = PCA_scores(:,PCA_order([1,2]));
+all_PCA_scores = all_PCA_scores(:,PCA_order([1,2]));
+target_PCA_scores = target_PCA_scores(:,PCA_order([1,2]));
 PCA_percExplained = PCA_percExplained(PCA_order([1,2]));
 PCA_labels = PCA_labels([1,2]);
 
-topCount = 5;
-[~,S5P_sortInds] = sort(OP_S5P_vals,'descend');
+topCount = 50;
+[~,dist_sortInds] = sort(all_dist_vals,'ascend');
+dist_topInds = dist_sortInds(1:topCount);
+[~,S5P_sortInds] = sort(all_OP_S5P_vals,'ascend');
 S5P_topInds = S5P_sortInds(1:topCount);
-[~,Vol_sortInds] = sort(Vol_vals,'descend');
+[~,Vol_sortInds] = sort(all_Vol_vals,'descend');
 Vol_topInds = Vol_sortInds(1:topCount);
+[~,Elo_sortInds] = sort(all_Elo_vals,'descend');
+Elo_topInds = Elo_sortInds(1:topCount);
 
-%Vector for S5P intensity
+%Vector for minimal distance
+dist_vec = [...
+    mean(all_PCA_scores(dist_topInds,1)),...
+    mean(all_PCA_scores(dist_topInds,2))];
+
+%Vector for cluster elongation
+Elo_vec = [...
+    mean(all_PCA_scores(Elo_topInds,1)),...
+    mean(all_PCA_scores(Elo_topInds,2))];
+
+%Vector for cluster elongation
 S5P_vec = [...
-    mean(PCA_scores(S5P_topInds,1)),...
-    mean(PCA_scores(S5P_topInds,2))];
+    mean(all_PCA_scores(S5P_topInds,1)),...
+    mean(all_PCA_scores(S5P_topInds,2))];
 
-%Vector for cluster volume
-Vol_vec = [...
-    mean(PCA_scores(Vol_topInds,1)),...
-    mean(PCA_scores(Vol_topInds,2))];
+
+anchor_vec = [-1.4,-0.245];
 
 subplot(1,4,2)
-plot(PCA_scores(:,1),PCA_scores(:,2),'k.',...
-    'MarkerEdgeColor',[0.6,0.6,0.6])
+scatter(all_PCA_scores(:,1),all_PCA_scores(:,2),30,...
+    all_dist_vals,'.')
+set(gca,'CLim',[0,1.5],'Colormap',flipud(parula))
+colorbar
 hold on
-plot([0,S5P_vec(1)],[0,S5P_vec(2)],'m-','LineWidth',1)
-plot([0,Vol_vec(1)],[0,Vol_vec(2)],'b-','LineWidth',1)
+dist_h = plot([anchor_vec(1),dist_vec(1)],...
+    [anchor_vec(2),dist_vec(2)],'y-','LineWidth',1);
+Elo_h = plot([anchor_vec(1),Elo_vec(1)],...
+    [anchor_vec(2),Elo_vec(2)],'r-','LineWidth',1);
+% S5P_h = plot([anchor_vec(1),S5P_vec(1)],...
+%     [anchor_vec(2),S5P_vec(2)],'b--','LineWidth',1);
 xlabel(PCA_labels{1})
 ylabel(PCA_labels{2})
-axis equal
+%axis equal
+set(gca,'Box','on')
 %set(gca,'XLim',[-6,3],'YLim',[-2,8])
+legend([dist_h,Elo_h],'Max. Cluster Elongation',...
+    'Min. Gene-cluster distance')
 
-if S5P_vec(2)>0
-    Vol_ortho_vec = Vol_vec*[0,-1;+1,0];
+%% --- Linear transformations of PCA values
+
+dist_vec_shifted = dist_vec - anchor_vec;
+Elo_vec_shifted = Elo_vec - anchor_vec;
+all_scores_shifted = all_PCA_scores - anchor_vec;
+target_scores_shifted = target_PCA_scores - anchor_vec;
+
+if dist_vec_shifted(2)>0
+    dist_ortho_vec_shifted = dist_vec_shifted*[0,-1;+1,0];
 else
-    Vol_ortho_vec = Vol_vec*[0,+1;-1,0];
+    dist_ortho_vec_shifted = dist_vec_shifted*[0,+1;-1,0];
 end
 
-%Perform transformation, such that volume points to north
+%Perform transformation, such that close contact points East
 
 %Define unit vectors
-unit_vec_2 = Vol_vec./norm(Vol_vec);
-unit_vec_1 = Vol_ortho_vec./norm(Vol_ortho_vec);
+unit_vec_1 = dist_vec_shifted./norm(dist_vec_shifted);
+unit_vec_2 = dist_ortho_vec_shifted./norm(dist_ortho_vec_shifted);
 
 %Define transformation matrix
 Trafo_matrix = [unit_vec_1',unit_vec_2'];
 
 %Perform transformation
-trafo_scores = PCA_scores*Trafo_matrix;
-trafo_Vol_vec = Vol_vec*Trafo_matrix;
-trafo_S5P_vec = S5P_vec*Trafo_matrix;
-
+all_trafo_scores = all_scores_shifted*Trafo_matrix;
+target_trafo_scores = target_scores_shifted*Trafo_matrix;
+trafo_dist_vec = dist_vec_shifted*Trafo_matrix;
+trafo_Elo_vec = Elo_vec_shifted*Trafo_matrix;
 
 subplot(1,4,3)
-plot(trafo_scores(:,1),trafo_scores(:,2),'k.',...
-    'MarkerEdgeColor',[0.6,0.6,0.6])
+scatter(all_trafo_scores(:,1),all_trafo_scores(:,2),30,...
+    all_dist_vals,'.')
 hold on
-plot([0,trafo_S5P_vec(1)],[0,trafo_S5P_vec(2)],'m-','LineWidth',1)
-plot([0,trafo_Vol_vec(1)],[0,trafo_Vol_vec(2)],'b-','LineWidth',1)
-xlabel('Transformed 1')
-ylabel('Transformed 2')
+set(gca,'CLim',[0,1.5],'Colormap',flipud(parula))
+colorbar
+plot([0,trafo_dist_vec(1)],...
+    [0,trafo_dist_vec(2)],...
+    'k-','LineWidth',1)
+plot([0,trafo_Elo_vec(1)],...
+    [0,trafo_Elo_vec(2)],...
+    'r-','LineWidth',1)
+xlabel('Transformed PC_1')
+ylabel('Transformed PC_2')
 axis equal
+hold off
+
+%% Pseudo-time sorting
+
+figure(1)
+
+subplot(1,4,4)
+
+plot(all_trafo_scores(:,1),all_trafo_scores(:,2),'ko',...
+    'MarkerFaceColor',[0.65,0.65,0.2],...
+    'MarkerEdgeColor','none',...
+    'MarkerSize',3)
+hold on
+plot(target_trafo_scores(:,1),target_trafo_scores(:,2),'ko',...
+    'MarkerFaceColor',[0.25,0.25,1.0],...
+    'MarkerEdgeColor','none',...
+    'MarkerSize',4)
+hold on
+
+dist_h = plot([0,trafo_dist_vec(1)],...
+    [0,trafo_dist_vec(2)],...
+    'k-','LineWidth',1);
+Elo_h = plot([0,trafo_Elo_vec(1)],...
+    [0,trafo_Elo_vec(2)],...
+    'r-','LineWidth',1);
+xlabel('Transformed PC_1')
+ylabel('Transformed PC_2')
+
 %set(gca,'XLim',[-6,3],'YLim',[-2,8])
 
-angle_shift = -0.132;
+% Obtain pseudo-time sorted data for target condition
+
 %Get angles from x,y coordinate
-angles = -atan2(trafo_scores(:,2),trafo_scores(:,1))./2./pi; % in radians
-%apply modulo operator
+angles = -atan2(target_trafo_scores(:,2),...
+    target_trafo_scores(:,1))./2./pi; % in radians
+
 angles = mod(angles,1);
-%Perform angle shift
-angles = mod(angles+angle_shift,1);
+
 %Get number of angles
 numPoints = numel(angles);
+
 %Define pseudo-time coordinate
 coord_s = ((1:numPoints)-1)./numPoints;
-
+register_shift = +0.5;
+coord_s = mod(coord_s+register_shift,1);
 [angles,sortInds] = sort(angles);
 
 %Calculate moving mean
@@ -173,8 +294,17 @@ curveSmooth = @(xx) movmean(...
     padarray(xx,windowSize,'circular','both'),...
     windowSize,'Endpoints','discard');
 
-plot(curveSmooth(trafo_scores(sortInds,1)),...
-    curveSmooth(trafo_scores(sortInds,2)),'k-','LineWidth',1)
+traj_h = plot(curveSmooth(target_trafo_scores(sortInds,1)),...
+    curveSmooth(target_trafo_scores(sortInds,2)),...
+    'k-','LineWidth',1.5);
+
+legend([dist_h,Elo_h,traj_h],...
+    'Max. Cluster Elongation',...
+    'Min. Gene-cluster distance','Reconstructed trajectory')
+
+title(sprintf('%s, 5-percentile dist. %2.2f \\mum',...
+    sortedCondNames{target_cond},prctlDist),...
+    'FontWeight','normal')
 
 %Sort all variables
 dist_vals = dist_vals(sortInds);
@@ -185,7 +315,8 @@ Cluster_S2P_vals = Cluster_S2P_vals(sortInds);
 Vol_vals = Vol_vals(sortInds);
 Elo_vals = Elo_vals(sortInds);
 Sol_vals = Sol_vals(sortInds);
-pseudoTime_central_slices{cc} = Central_slices(sortInds);
+pseudoTime_central_slices{target_cond} = Central_slices(sortInds);
+%coord_s = coord_s(sortInds);
 
 %Bin discretization for plotting of properties vs. pseudo time s
 
@@ -244,14 +375,14 @@ end
 figure(4)
 clf
 
-square_ind = round(numWindows.*0.35);
+square_ind = round(numWindows.*0.33);
 square_marker = 'ks';
-circle_ind = round(numWindows.*0.51);
+circle_ind = round(numWindows.*0.48);
 circle_marker = 'ko';
-diamond_ind = round(numWindows.*0.6);
+diamond_ind = round(numWindows.*0.57);
 diamond_marker = 'kd';
 
-subplot(2,2,3)
+subplot(3,2,3)
 plot(coord_s,dist_vals,'ko','MarkerFaceColor',[0.6,0.6,0.6],...
     'MarkerEdgeColor','none','MarkerSize',3)
 hold on
@@ -266,7 +397,7 @@ xlabel('Pseudo-time s')
 ylabel('Distance [\mum]')
 set(gca,'YLim',[0,4])
 
-subplot(2,2,2)
+subplot(3,2,2)
 plot(coord_s,OP_S5P_vals,'ko','MarkerFaceColor',[0.6,0.6,0.6],...
     'MarkerEdgeColor','none','MarkerSize',3)
 hold on
@@ -281,7 +412,7 @@ xlabel('Pseudo-time s')
 ylabel('Gene Pol II Ser5P')
 set(gca,'YLim',[0,6])
 
-subplot(2,2,1)
+subplot(3,2,1)
 plot(coord_s,OP_S2P_vals,'ko','MarkerFaceColor',[0.6,0.6,0.6],...
     'MarkerEdgeColor','none','MarkerSize',3)
 hold on
@@ -302,20 +433,19 @@ set(gca,'YLim',[0.5,2.5])
 
 legend(legend_array,{'Induced','Associated','Transcribing'})
 
-% title(sprintf('%s, f(d<%d nm)=%1.1f%%',...
-%     geneName,dist_threshold.*1000,frac_close.*100),...
-%     'FontWeight','normal')
 
-subplot(2,2,4)
+subplot(3,2,4)
 
 scatter(OP_S5P_vals,dist_vals,12,OP_S2P_vals,'o','filled')
 xlabel('Gene Pol II Ser5P')
 ylabel('Distance [\mum]')
 colormap(flipud(parula))
 colormap(parula)
-clim([0,1.5])
+clim([0.5,1.8])
 colorbar
 set(gca,'Box','on')
+
+
 
 
 
@@ -336,3 +466,50 @@ plot(mean_OP_S5P(diamond_ind),mean_dist(diamond_ind),diamond_marker,...
 
 % patch([mean_OP_S5P nan],[mean_OP_S2P nan],[mean_dist nan],...
 %     [mean_dist nan], 'edgecolor', 'interp');
+
+subplot(3,2,5)
+
+plot(coord_s,Elo_vals,'ko','MarkerFaceColor',[0.6,0.6,0.6],...
+    'MarkerEdgeColor','none','MarkerSize',3)
+hold on
+plot(windowCenters,mean_Elo,'k-','LineWidth',1)
+legend_array = zeros(1,3);
+legend_array(2) = ...
+    plot(windowCenters(circle_ind),mean_Elo(circle_ind),circle_marker,...
+    'MarkerFaceColor',[1,0,0]);
+legend_array(1) = ...
+    plot(windowCenters(square_ind),mean_Elo(square_ind),square_marker,...
+    'MarkerFaceColor',[0,0,1]);
+legend_array(3) = ...
+    plot(windowCenters(diamond_ind),mean_Elo(diamond_ind),diamond_marker,...
+    'MarkerFaceColor',[0.3,0.3,0.3]);
+xlabel('Pseudo-time s')
+ylabel('Cluster Elongation')
+set(gca,'YLim',[1,6])
+
+legend(legend_array,{'Induced','Associated','Transcribing'})
+
+
+
+
+subplot(3,2,6)
+
+plot(coord_s,Vol_vals,'ko','MarkerFaceColor',[0.6,0.6,0.6],...
+    'MarkerEdgeColor','none','MarkerSize',3)
+hold on
+plot(windowCenters,mean_Vol,'k-','LineWidth',1)
+legend_array = zeros(1,3);
+legend_array(2) = ...
+    plot(windowCenters(circle_ind),mean_Vol(circle_ind),circle_marker,...
+    'MarkerFaceColor',[1,0,0]);
+legend_array(1) = ...
+    plot(windowCenters(square_ind),mean_Vol(square_ind),square_marker,...
+    'MarkerFaceColor',[0,0,1]);
+legend_array(3) = ...
+    plot(windowCenters(diamond_ind),mean_Vol(diamond_ind),diamond_marker,...
+    'MarkerFaceColor',[0.3,0.3,0.3]);
+xlabel('Pseudo-time s')
+ylabel('Cluster Volume [\mum^3]')
+%set(gca,'YLim',[1,6])
+
+legend(legend_array,{'Induced','Associated','Transcribing'})

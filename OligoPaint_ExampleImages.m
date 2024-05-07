@@ -3,7 +3,7 @@ clear all
 %% Plot the example images
 
 SourceFileCell = {...
-	'./ExtractedStacks_Sphere/Cond_5/Image_6.mat',...
+	'./ExtractedStacks_Stages/Sphere/Cond_13/Image_19.mat',...
 	};
 
 OP_blurRange = 0.03; % micrometers
@@ -11,11 +11,13 @@ Ser2P_blurRange = 0.01; % micrometers
 Ser5P_blurRange = 0.01; % micrometers
 
 imgRanges = {...
-	[30,30,66.5,66.5]+[-6,+6,-6,+6]};
-zCoordinate = [22];
+	[22,22,37,37]+[-8,+8,-8,+8]};
+% imgRanges = {...
+% 	[0,60,0,80]};
+zCoordinate = [13]; % 17,33
 rotate_flag = [false];
 
-plotTitles = {'foxd5'};
+plotTitles = {'klf2b'};
 
 scaleBar = 4.0; % in microns
 
@@ -40,9 +42,9 @@ for pp = 1:numPlots
 	thisPixelSize = pixelSize;
 	
 	% --- Removal of DNA background
-	OP_img = double(thisImg{1}(:,:,zCoordinate(pp)));
-	Ser2P_img = double(thisImg{2}(:,:,zCoordinate(pp)));
-	Ser5P_img = double(thisImg{3}(:,:,zCoordinate(pp)));
+	OP_img = double(thisImg{3}(:,:,zCoordinate(pp)));
+	Ser2P_img = double(thisImg{1}(:,:,zCoordinate(pp)));
+	Ser5P_img = double(thisImg{2}(:,:,zCoordinate(pp)));
 	
 	if rotate_flag(pp)
 		OP_img = OP_img';
@@ -69,9 +71,9 @@ for pp = 1:numPlots
 		thisImgRange(3):thisImgRange(4));
 	thisSize = size(Ser5P_img);
 	
-	OP_lims = prctile(OP_img(:),[10,99.99]);
+	OP_lims = prctile(OP_img(:),[5,99.97]);
 	Ser5P_img = Ser5P_img./median(Ser5P_img(:));
-	Ser5P_lims = [0.0,4.5];
+	Ser5P_lims = [0.5,4.5];
 	Ser2P_lims = prctile(Ser2P_img(:),[10,99.9]);
 	
 	
@@ -101,7 +103,6 @@ for pp = 1:numPlots
 	set(gca,'XTick',[],'YTick',[])
 	set(gca,'YDir','normal')
 	ylabel('Pol II S5P')
-	colormap(gray)
 
 	
 	subplot(3,numPlots.*2,numPlots.*4+1+(pp-1).*2)
@@ -112,7 +113,7 @@ for pp = 1:numPlots
 	set(gca,'XTick',[],'YTick',[])
 	set(gca,'YDir','normal')
 	ylabel('Pol II S2P')
-	colormap((gray))
+	colormap(inferno)
 	
 	
 	

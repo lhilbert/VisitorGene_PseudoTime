@@ -2,8 +2,8 @@ clear all
 
 % Specify the directory that contains the extraced files from the last
 % step, where you extracted from the raw files obtained from the microscope
-sourceDirectory = './ExtractedStacks_OligoPaint/**/';
-%sourceDirectory = './ExtractedStacks_OligoPaint/Cond_1/';
+sourceDirectory = './ExtractedStacks_Stages/**/';
+%sourceDirectory = './ExtractedStacks_Stages/Sphere/Cond_1/';
 
 % --- file read and display procedure begins here
 
