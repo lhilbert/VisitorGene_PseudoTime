@@ -27,7 +27,7 @@ OPseg_numStdDev = 5; % number of standard deviations in robust threshold
 
 Nuc_min_vol = 40; % cubic microns
 Nuc_min_sol = 0.7; % to ensure round nuclei
-Cluster_minVol = 0.03;
+Cluster_minVol = 0.08; % to only include large clusters
 OP_minVol = 0.05; % cubic microns
 
 dist_threshold = 0.5;0.25; % contact distance in micrometers
@@ -721,17 +721,24 @@ for cc = 1:numConds
 	
 end
 
+%% Saving of results
+
+save('ConditionSortedResults')
 
 %% Overview plots for all analyzed conditions
 
 figure(4)
 clf
 
+prct_dist = cellfun(@(xx)prctile(xx,10),sortedDistCell); % in micrometers
+prct_Ser2P = cellfun(@(xx)prctile(xx,90),sortedIntCell{1});
+
+contact_freq = cellfun(@(xx)mean(xx<=0.50),sortedDistCell); % in micrometers);
 avg_dist = cellfun(@mean,sortedDistCell); % in micrometers
-avg_Ser5P = cellfun(@mean,sortedIntCell{2});
+avg_Ser5P = cellfun(@median,sortedIntCell{2});
 avg_Ser2P = cellfun(@mean,sortedIntCell{1});
 
-scatter(avg_Ser5P,avg_Ser2P,100,avg_dist,'filled')
+scatter(avg_Ser5P,avg_Ser2P,100,prct_dist,'filled')
 xlabel('Mean Pol II Ser5P')
 ylabel('Mean Pol II Ser2P')
 
@@ -740,4 +747,3 @@ colorbar
 set(gca,'Box','on')
 title('Mean gene-cluster distance [\mum]','FontWeight','normal')
 
-save('ConditionSortedResults')
