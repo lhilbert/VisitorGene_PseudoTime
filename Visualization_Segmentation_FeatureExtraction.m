@@ -1,9 +1,6 @@
 clear all
 
-% Script modified to only extract for a single gene and stage, but with
-% image data to be plotted as examples
-
-sourceDirectory = './ExtractedStacks_Stages/Sphere/Cond_13/';
+sourceDirectory = './ExtractedStacks_Stages/**/';
 
 % Channels for segmentation
 NucSegChannel = 2;
@@ -33,9 +30,9 @@ Nuc_min_sol = 0.7; % to ensure round nuclei
 Cluster_minVol = 0.08; % to only include large clusters
 OP_minVol = 0.05; % cubic microns
 
-dist_threshold = 0.5; % contact distance in micrometers
+dist_threshold = 0.5;0.25; % contact distance in micrometers
 
-centralSliceExtension = 25; % pixels from centroid
+centralSliceExtension = 0; % pixels from centroid
 
 
 % ------end of analysis parameters
@@ -726,7 +723,7 @@ end
 
 %% Saving of results
 
-save('Visualization_ConditionSortedResults')
+save('ConditionSortedResults')
 
 %% Overview plots for all analyzed conditions
 
