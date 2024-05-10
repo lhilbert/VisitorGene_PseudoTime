@@ -45,7 +45,11 @@ PseudoTime_Trajectory.m
 
 GeneMap_Interpolation.m
 
-VisitorGene_PseudoTimeSorting.m
+Additinoal scripts needed for making a gene-cluster visit pseudo-time course:
+
+Segmentation_FeatureExtraction.m
+
+Visualization_PseudoTimeCourse_CroppedImages.m
 
 # Example data set
 
