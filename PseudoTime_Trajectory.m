@@ -334,7 +334,7 @@ coord_s = mod(coord_s+register_shift,1);
 [angles,sortInds] = sort(angles);
 
 %Calculate moving mean
-windowSize = 20;
+windowSize = 5;
 curveSmooth = @(xx) movmean(...
     padarray(xx,windowSize,'circular','both'),...
     windowSize,'Endpoints','discard');
