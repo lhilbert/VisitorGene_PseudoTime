@@ -621,7 +621,7 @@ parfor ff = 1:numFiles
         %waitforbuttonpress
     end
 
-    if fractionAboveFour > 0.15
+    if fractionAboveFour > 0
         validFileFlags(ff) = false;
     else
         validFileFlags(ff) = true;
