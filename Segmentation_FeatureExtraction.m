@@ -1,6 +1,6 @@
 clear all
 
-visualizationFlag = true;
+visualizationFlag = false;
 
 if visualizationFlag
 
@@ -511,7 +511,7 @@ parfor ff = 1:numFiles
             OP_comps.NumObjects))
 
 
-        if OP_comps.NumObjects>0  t&& Cluster_comps.NumObjects>0
+        if OP_comps.NumObjects>0 && Cluster_comps.NumObjects>0
 
             markerSize = 12;
 
