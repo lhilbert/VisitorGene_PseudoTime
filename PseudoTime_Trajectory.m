@@ -684,14 +684,14 @@ if target_cond == 2
         S5P_img = visImgCell{this_ind}{2};
         S2P_img = visImgCell{this_ind}{1};
 
-        OP_lims = [0.9,1.4];
+        OP_lims = [1.05,1.4];
         OP_img = OP_img - OP_lims(1);
         OP_img(OP_img<0) = 0;
         OP_img = OP_img./diff(OP_lims);
         OP_img(OP_img>1) = 1;
         OP_img = 1-OP_img;
 
-        S5P_lims = [0.9,3];
+        S5P_lims = [0.95,2.4];
         S5P_img = S5P_img./median(S5P_img(:));
         S5P_img = S5P_img - S5P_lims(1);
         S5P_img(S5P_img<0) = 0;
@@ -699,7 +699,7 @@ if target_cond == 2
         S5P_img(S5P_img>1) = 1;
         S5P_img = 1-S5P_img;
 
-        S2P_lims = [0.7,3];
+        S2P_lims = [0.7,2.7];
         S2P_img = S2P_img - S2P_lims(1);
         S2P_img(S2P_img<0) = 0;
         S2P_img = S2P_img./diff(S2P_lims);
@@ -827,7 +827,8 @@ if target_cond == 2
             set(gca,'YTickLabel',[])
         end
 
-        title(sprintf('s=%2.2f',coord_s(this_ind)),...
+        title(sprintf('s=%2.2f, d=%2.2f \\mum',...
+            coord_s(this_ind),dist_vals(this_ind)),...
             'FontWeight','normal')
 
         subplot(4,numExamples,numExamples.*1+ee)
@@ -867,10 +868,17 @@ if target_cond == 2
             'XTick',[],'YTick',[],'YDir','normal')
 
         subplot(4,numExamples,numExamples.*3+ee)
-        imagesc(...
+        
+        yellowChannel = S2P_img;
+        blueChannel = OP_img;
+        rgb_img = zeros(size(OP_img,1),size(OP_img,2),3);
+        rgb_img(:,:,1) = yellowChannel;
+        rgb_img(:,:,2) = yellowChannel;
+        rgb_img(:,:,3) = blueChannel;
+        image(...
             [-extension,extension].*visPixelSize,...
             [-extension,extension].*visPixelSize,...
-            S2P_img,[0,1])
+            rgb_img)
 
         title(sprintf('I_{Ser2P}=%2.2f',OP_S2P_vals(this_ind)),...
             'FontWeight','normal')
@@ -883,6 +891,9 @@ if target_cond == 2
         set(gca,'XLim',[-0.4,0.4],...
             'YLim',OP_Displ(2)+[-0.4,0.4],...
             'XTick',[],'YTick',[],'YDir','normal')
+
+
+        
 
 
     end

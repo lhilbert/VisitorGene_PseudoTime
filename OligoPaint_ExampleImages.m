@@ -3,7 +3,7 @@ clear all
 %% Plot the example images
 
 SourceFileCell = {...
-	'./ExtractedStacks_Stages/Sphere/Cond_13/Image_19.mat',...
+	'./ExtractedStacks_Stages/Oblong/Cond_2/Image_8.mat',...
 	};
 
 OP_blurRange = 0.03; % micrometers
@@ -11,10 +11,10 @@ Ser2P_blurRange = 0.01; % micrometers
 Ser5P_blurRange = 0.01; % micrometers
 
 imgRanges = {...
-	[22,22,37,37]+[-8,+8,-8,+8]};
+	[37,37,72,72]+[-6,+6,-6,+6]};
 % imgRanges = {...
 % 	[0,60,0,80]};
-zCoordinate = [13]; % 17,33
+zCoordinate = [34]; % 17,33
 rotate_flag = [false];
 
 plotTitles = {'klf2b'};
@@ -71,10 +71,10 @@ for pp = 1:numPlots
 		thisImgRange(3):thisImgRange(4));
 	thisSize = size(Ser5P_img);
 	
-	OP_lims = prctile(OP_img(:),[5,99.97]);
+	OP_lims = prctile(OP_img(:),[0.25,99.95]);
 	Ser5P_img = Ser5P_img./median(Ser5P_img(:));
-	Ser5P_lims = [0.5,4.5];
-	Ser2P_lims = prctile(Ser2P_img(:),[10,99.9]);
+	Ser5P_lims = [0.5,3.5];
+	Ser2P_lims = prctile(Ser2P_img(:),[5,99.9]);
 	
 	
 	subplot(3,numPlots.*2,numPlots.*0+1+(pp-1).*2)
