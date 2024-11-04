@@ -6,27 +6,6 @@ load('ConditionSortedResults_ActinPerturbation')
 
 %% Overview plots for all analyzed conditions
 
-figure(4)
-clf
-
-prct_dist = cellfun(@(xx)prctile(xx,10),sortedDistCell); % in micrometers
-prct_Ser2P = cellfun(@(xx)prctile(xx,90),sortedIntCell{1});
-
-contact_freq = cellfun(@(xx)mean(xx<=0.50),sortedDistCell); % in micrometers);
-avg_dist = cellfun(@mean,sortedDistCell); % in micrometers
-avg_Ser5P = cellfun(@mean,sortedIntCell{2});
-avg_Ser2P = cellfun(@mean,sortedIntCell{1});
-
-scatter(avg_Ser5P,avg_Ser2P,100,prct_dist,'filled')
-xlabel('Mean Pol II Ser5P')
-ylabel('Mean Pol II Ser2P')
-
-colormap(parula)
-colorbar
-set(gca,'Box','on')
-title('Mean gene-cluster distance [\mum]','FontWeight','normal')
-
-
 dist_prctl_all = zeros(numConds,1);
 S5P_median_all = zeros(numConds,1);
 S2P_median_all = zeros(numConds,1);
@@ -61,7 +40,7 @@ for cc = 1:numConds
         @(xx)median(xx),OP_S5P_vals);
 
     S2P_median_CI(:,cc) = bootci(n_boot,...
-        @(xx)prctile(xx,75),OP_S2P_vals);
+        @(xx)prctile(xx,90),OP_S2P_vals);
 
     dist_prctl_CI(:,cc) = bootci(n_boot,...
         @(xx)prctile(xx,prctile_val),dist_vals);
@@ -81,8 +60,8 @@ end
 %% -- Overview figure
 
 gene_names = {...
-    'foxd5 (16.0%, active)','klf2b (14.5%, active)',...
-    'gadd45ga (1.5%, active)','iscub (0.7%, active)','zgc:64022 (12.6%, inactive)'};
+    'foxd5','klf2b',...
+    'zgc:64022','iscub','gadd45ga'};
 
 treatment_names = {...
     'Uninj','BFP','Actin-WT','Actin-R62D',};
@@ -90,11 +69,10 @@ treatment_names = {...
 gene_cond_inds = {...
     [1,2,4,3]+8,...
     [1,2,4,3]+0,...
-    [1,2,4,3]+12,...
-    [1,2,4,3]+4,...
     [1,2,4,3]+16,...
+    [1,2,4,3]+4,...
+    [1,2,4,3]+12,...
     };
-
 
 
 figure(1)
@@ -112,6 +90,7 @@ dist_max = 0.8;
 
 Dist_Delta = zeros(1,5);
 S5P_Delta = zeros(1,5);
+S2P_Delta = zeros(1,5);
 
 for gg = 1:5
 
@@ -161,13 +140,16 @@ for gg = 1:5
         'YTick',1:0.05:1.2,'XTick',1:4)
 
     Dist_Delta(gg) = ...
-        dist_prctl_all(gene_cond_inds{gg}(4))...
-        -dist_prctl_all(gene_cond_inds{gg}(3));
+        dist_prctl_all(gene_cond_inds{gg}(3))...
+        -dist_prctl_all(gene_cond_inds{gg}(4));
 
     S5P_Delta(gg) = ...
-        S5P_median_all(gene_cond_inds{gg}(4))...
-        -S5P_median_all(gene_cond_inds{gg}(3));
+        S5P_median_all(gene_cond_inds{gg}(3))...
+        -S5P_median_all(gene_cond_inds{gg}(4));
 
+    S2P_Delta(gg) = ...
+        S2P_median_all(gene_cond_inds{gg}(3))...
+        -S2P_median_all(gene_cond_inds{gg}(2));
 
     figure(2)
     subplot(4,5,gg)
@@ -210,10 +192,36 @@ end
 figure(3)
 clf
 
-plot(Dist_Delta,S5P_Delta,'ko-')
-xlabel('\Deltad (R62D-WT) [\mum]')
-ylabel('\DeltaPol II S5P (R62D-WT)')
+subplot(3,1,1)
+xLocVals = [1:4,5.5];
+plot(xLocVals,Dist_Delta,'ko',...
+    'MarkerFaceColor',[0,0,0])
+xlabel('')
+ylabel('\Deltad (WT-R62D) [\mum]')
+set(gca,'XTick',xLocVals,'XTickLabel',gene_names,...
+    'XLim',[0.5,6])
+hold on
+plot([0.5,6],[0,0],'k-')
 
+subplot(3,1,2)
+plot(xLocVals,S5P_Delta,'ko',...
+    'MarkerFaceColor',[0,0,0])
+xlabel('')
+ylabel('\DeltaPol II S5P (WT-R62D) [\mum]')
+set(gca,'XTick',xLocVals,'XTickLabel',gene_names,...
+    'XLim',[0.5,6])
+hold on
+plot([0.5,6],[0,0],'k-')
+
+subplot(3,1,3)
+plot(xLocVals,S2P_Delta,'ko',...
+    'MarkerFaceColor',[0,0,0])
+xlabel('')
+ylabel('\DeltaPol II S2P (WT-BFP) [\mum]')
+set(gca,'XTick',xLocVals,'XTickLabel',gene_names,...
+    'XLim',[0.5,6])
+hold on
+plot([0.5,6],[0,0],'k-')
 
 %% -- generate output of counts of nuclei and observations
 
