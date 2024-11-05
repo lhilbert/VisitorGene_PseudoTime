@@ -11,16 +11,24 @@ load('ConditionSortedResults_ActinPerturbation_withQC')
 dist_prctl_all = zeros(numConds,1);
 S5P_mean_all = zeros(numConds,1);
 S2P_mean_all = zeros(numConds,1);
+S5P_mean_close = zeros(numConds,1);
+S5P_mean_far = zeros(numConds,1);
+S2P_mean_close = zeros(numConds,1);
+S2P_mean_far = zeros(numConds,1);
 contactFraction_all = zeros(numConds,1);
 nn_observations = zeros(numConds,1);
 
 dist_prctl_CI = zeros(2,numConds);
 S5P_mean_CI = zeros(2,numConds);
+S5P_mean_close_CI = zeros(2,numConds);
+S5P_mean_far_CI = zeros(2,numConds);
 S2P_mean_CI = zeros(2,numConds);
+S2P_mean_close_CI = zeros(2,numConds);
+S2P_mean_far_CI = zeros(2,numConds);
 contactFraction_CI = zeros(2,numConds);
 
 prctile_val = 5;
-n_boot = 1000;
+n_boot = 5000;
 
 dist_support = linspace(0,8,500);
 dist_bandwidth = 0.15;
@@ -53,12 +61,24 @@ for cc = 1:numConds
     dist_prctl_all(cc) =  prctile(dist_vals,prctile_val);
     S5P_mean_all(cc) = mean(OP_S5P_vals);
     S2P_mean_all(cc) = mean(OP_S2P_vals);
+    S5P_mean_close(cc) = mean(OP_S5P_vals(dist_vals<=dist_threshold));
+    S5P_mean_far(cc) = mean(OP_S5P_vals(dist_vals>=dist_threshold));
+    S2P_mean_close(cc) = mean(OP_S2P_vals(dist_vals<=dist_threshold));
+    S2P_mean_far(cc) = mean(OP_S2P_vals(dist_vals>=dist_threshold));
 
     S5P_mean_CI(:,cc) = bootci(n_boot,...
         @(xx)mean(xx),OP_S5P_vals);
+    S5P_mean_close_CI(:,cc) = bootci(n_boot,...
+        @(xx)mean(xx),OP_S5P_vals(dist_vals<=dist_threshold));
+    S5P_mean_far_CI(:,cc) = bootci(n_boot,...
+        @(xx)mean(xx),OP_S5P_vals(dist_vals>dist_threshold));
 
     S2P_mean_CI(:,cc) = bootci(n_boot,...
         @(xx)mean(xx),OP_S2P_vals);
+    S2P_mean_close_CI(:,cc) = bootci(n_boot,...
+        @(xx)mean(xx),OP_S5P_vals(dist_vals<=dist_threshold));
+    S2P_mean_far_CI(:,cc) = bootci(n_boot,...
+        @(xx)mean(xx),OP_S5P_vals(dist_vals>dist_threshold));
 
     dist_prctl_CI(:,cc) = bootci(n_boot,...
         @(xx)prctile(xx,S2P_prctile),dist_vals);
@@ -201,7 +221,7 @@ title('Contact %')
 
 set(gca,'XLim',[S5P_min,S5P_max],'YLim',[S2P_min,S2P_max])
 set(gca,'Box','on')
-caxis([contact_min,contact_max])
+clim([contact_min,contact_max])
 
 
 
@@ -332,10 +352,116 @@ set(gca,'YLim',[-4,+4],'XLim',[contact_min,contact_max])
 title('Over-expression of polymerizing actin')
 
 
-%% -- more figures
+
+
+% check if contact and transcription changes are temporally segregated
 
 figure(2)
 clf
+
+[Rval,Pval] = corrcoef(...
+    [contactFraction_all(treatmentCondInds),...
+    S5P_mean_close(treatmentCondInds),...
+    S5P_mean_far(treatmentCondInds),...
+    S2P_mean_close(treatmentCondInds),...
+    S2P_mean_far(treatmentCondInds)]);
+
+subplot(2,2,1)
+
+pp = polyfit(contactFraction_all(treatmentCondInds).*100,...
+    S5P_mean_close(treatmentCondInds),1);
+legend_handle = ...
+    plot([contact_min,contact_max],polyval(pp,[contact_min,contact_max]),...
+    'r-','LineWidth',1.5);
+
+hold on
+
+errorbar(contactFraction_all(treatmentCondInds).*100,...
+    S5P_mean_close(treatmentCondInds),...
+    S5P_mean_close(treatmentCondInds)-S5P_mean_close_CI(1,treatmentCondInds)',...
+    S5P_mean_close_CI(2,treatmentCondInds)'-S5P_mean_close(treatmentCondInds),...
+    'ko')
+
+legend(legend_handle,sprintf('R=%2.2f, P=%4.4f',Rval(1,2),Pval(1,2)))
+xlabel('Contact %')
+ylabel('Pol II Ser2P Int.')
+title(sprintf('Gated for d\\leq%2.2f\\mum',dist_threshold),...
+    'FontWeight','normal')
+set(gca,'XLim',[contact_min,contact_max])
+
+subplot(2,2,2)
+
+pp = polyfit(contactFraction_all(treatmentCondInds).*100,...
+    S5P_mean_far(treatmentCondInds),1);
+legend_handle = ...
+    plot([contact_min,contact_max],polyval(pp,[contact_min,contact_max]),...
+    'r-','LineWidth',1.5);
+
+hold on
+
+errorbar(contactFraction_all(treatmentCondInds).*100,...
+    S5P_mean_far(treatmentCondInds),...
+    S5P_mean_far(treatmentCondInds)-S5P_mean_far_CI(1,treatmentCondInds)',...
+    S5P_mean_far_CI(2,treatmentCondInds)'-S5P_mean_far(treatmentCondInds),...
+    'ko')
+
+legend(legend_handle,sprintf('R=%2.2f, P=%4.4f',Rval(1,3),Pval(1,3)))
+xlabel('Contact %')
+ylabel('Pol II Ser5P Int.')
+title(sprintf('Gated for d>%2.2f\\mum',dist_threshold),...
+    'FontWeight','normal')
+set(gca,'XLim',[contact_min,contact_max])
+
+subplot(2,2,3)
+
+pp = polyfit(contactFraction_all(treatmentCondInds).*100,...
+    S2P_mean_close(treatmentCondInds),1);
+legend_handle = ...
+    plot([contact_min,contact_max],polyval(pp,[contact_min,contact_max]),...
+    'r-','LineWidth',1.5);
+
+hold on
+
+errorbar(contactFraction_all(treatmentCondInds).*100,...
+    S2P_mean_close(treatmentCondInds),...
+    S2P_mean_close(treatmentCondInds)...
+    -S2P_mean_close_CI(1,treatmentCondInds)',...
+    S2P_mean_close_CI(2,treatmentCondInds)'...
+    -S2P_mean_close(treatmentCondInds),...
+    'ko')
+
+legend(legend_handle,sprintf('R=%2.2f, P=%4.4f',Rval(1,4),Pval(1,4)))
+xlabel('Contact %')
+ylabel('Pol II Ser2P Int.')
+set(gca,'XLim',[contact_min,contact_max])
+
+subplot(2,2,4)
+
+pp = polyfit(contactFraction_all(treatmentCondInds).*100,...
+    S2P_mean_far(treatmentCondInds),1);
+legend_handle = ...
+    plot([contact_min,contact_max],polyval(pp,[contact_min,contact_max]),...
+    'r-','LineWidth',1.5);
+
+hold on
+
+errorbar(contactFraction_all(treatmentCondInds).*100,...
+    S2P_mean_far(treatmentCondInds),...
+    S2P_mean_far(treatmentCondInds)...
+    -S2P_mean_far_CI(1,treatmentCondInds)',...
+    S2P_mean_far_CI(2,treatmentCondInds)'...
+    -S2P_mean_far(treatmentCondInds),...
+    'ko')
+
+legend(legend_handle,sprintf('R=%2.2f, P=%4.4f',Rval(1,5),Pval(1,5)))
+xlabel('Contact %')
+ylabel('Pol II Ser2P Int.')
+set(gca,'XLim',[contact_min,contact_max])
+
+
+
+
+%% -- more figures
 
 figure(3)
 clf
@@ -354,24 +480,6 @@ S2P_Delta = zeros(1,5);
 S2P_Delta_CI = zeros(2,5);
 
 for gg = 1:5
-
-    % Distance-Ser2P scatter plots
-    figure(2)
-    for tt = 1:numTargets
-        subplot(numTargets,numGenes,...
-            numGenes.*(target_inds(tt)-1)+gg)
-
-        plot(sorted_paired_distCell{gene_cond_inds{gg}(tt)},...
-            sorted_paired_OPIntCell{1}{gene_cond_inds{gg}(tt)},...
-            'k.')
-        hold on
-        plot([1,1].*dist_threshold,[0,3],'k--')
-        set(gca,'XLim',[0,8],'YLim',[0,3])
-        legend(sprintf('Contact: %2.2f%%',...
-            100.*contactFraction_all(gene_cond_inds{gg}(tt))))
-
-        title(sortedCondNames{gene_cond_inds{gg}(tt)})
-    end
 
     % Summary statistics treatment effect on gene-cluster visit
     figure(3)
@@ -431,60 +539,37 @@ for gg = 1:5
         'XTickLabelRotation',90,'YLim',[0.95,1.15],'XLim',[0.8,4.2],...
         'YTick',0.8:0.05:1.2,'XTick',1:4)
 
-    Dist_Delta(gg) = ...
-        +prctile(...
-        sorted_paired_distCell{gene_cond_inds{gg}(3)},prctile_val)...
-        -prctile(...
-        sorted_paired_distCell{gene_cond_inds{gg}(4)},prctile_val);
-
-    WT_Dist_BS = bootstrp(n_boot,...
-        @(xx)prctile(xx,prctile_val),...
-        sorted_paired_distCell{gene_cond_inds{gg}(3)});
-
-    R62D_Dist_BS = bootstrp(n_boot,...
-        @(xx)prctile(xx,prctile_val),...
-        sorted_paired_distCell{gene_cond_inds{gg}(4)});
-
-    Dist_Delta_CI(:,gg) = prctile(WT_Dist_BS-R62D_Dist_BS,...
-        [0.025,97.25])';
-
-    S5P_Delta(gg) = ...
-        S5P_mean_all(gene_cond_inds{gg}(3))...
-        -S5P_mean_all(gene_cond_inds{gg}(4));
-
-    WT_S5P_BS = bootstrp(n_boot,...
-        @median,...
-        sorted_paired_OPIntCell{2}{gene_cond_inds{gg}(3)});
-
-    R62D_S5P_BS = bootstrp(n_boot,...
-        @median,...
-        sorted_paired_OPIntCell{2}{gene_cond_inds{gg}(4)});
-
-    S5P_Delta_CI(:,gg) = prctile(WT_S5P_BS-R62D_S5P_BS,...
-        [0.025,97.25])';
-
-
-    S2P_Delta(gg) = ...
-        S2P_mean_all(gene_cond_inds{gg}(3))...
-        -S2P_mean_all(gene_cond_inds{gg}(2));
-
-    WT_S2P_BS = bootstrp(n_boot,...
-        @median,...
-        sorted_paired_OPIntCell{1}{gene_cond_inds{gg}(3)});
-
-    R62D_S2P_BS = bootstrp(n_boot,...
-        @median,...
-        sorted_paired_OPIntCell{1}{gene_cond_inds{gg}(4)});
-
-    S2P_Delta_CI(:,gg) = prctile(WT_S2P_BS-R62D_S2P_BS,...
-        [0.025,97.25])';
-
-
-
-
-
-
+    % Distance-Ser2P scatter plots
     figure(4)
+    for tt = 1:numTargets
+        subplot(numTargets,numGenes,...
+            numGenes.*(target_inds(tt)-1)+gg)
+
+        patch([0,0,dist_threshold,dist_threshold],[0,3,3,0],...
+            [0.6,0.6,0.6],'Edgecolor','none')
+%         plot([1,1].*dist_threshold,[0,3],...
+%             'k-','Color',[0.6,0.6,0.6],'LineWidth',1.5)
+        hold on
+        points_handle = plot(...
+            sorted_paired_distCell{gene_cond_inds{gg}(tt)},...
+            sorted_paired_OPIntCell{1}{gene_cond_inds{gg}(tt)},...
+            'ko','MarkerSize',1.8,'MarkerFaceColor',[0,0,0]);
+        %alpha(points_handle,0.3)
+        hold on
+        set(gca,'XLim',[0,8],'YLim',[0,3],'Box','on')
+        legend(sprintf('Contact: %2.2f%%',...
+            100.*contactFraction_all(gene_cond_inds{gg}(tt))))
+
+        xlabel('Gene-cluster distance [\\mum]')
+        ylabel('Gene Pol II Ser2P Int.')
+        title(sortedCondNames{gene_cond_inds{gg}(tt)})
+    end
+
+
+    
+
+
+    figure(5)
     subplot(4,5,gg)
     plot([1,1].*dist_threshold,...
         [0,0.5],'k--')
@@ -550,7 +635,7 @@ for gg = 1:5
     set(gca,'XLim',[0,1000],'YLim',[0,10])
 
 
-    figure(5)
+    figure(6)
     subplot(4,5,gg+15)
     plot(sorted_paired_OPIntCell{1}{gene_cond_inds{gg}(2)},...
         sorted_paired_OPIntCell{2}{gene_cond_inds{gg}(2)},...
@@ -572,51 +657,7 @@ for gg = 1:5
 
 end
 
-figure(6)
-clf
 
-subplot(3,1,1)
-xLocVals = [1:4,5.5];
-
-errorbar(xLocVals,Dist_Delta,...
-        +Dist_Delta_CI(1,:)-Dist_Delta,...
-        -Dist_Delta_CI(2,:)+Dist_Delta,...
-        'ko','Color',[0.0,0.0,0.0],'LineWidth',1,...
-        'MarkerFaceColor',[0,0,0])
-
-xlabel('')
-ylabel('\Deltad (WT-R62D) [\mum]')
-set(gca,'XTick',xLocVals,'XTickLabel',gene_names,...
-    'XLim',[0.5,6])
-hold on
-plot([0.5,6],[0,0],'k-')
-
-subplot(3,1,2)
-
-errorbar(xLocVals,S5P_Delta,...
-        +S5P_Delta_CI(1,:)-S5P_Delta,...
-        -S5P_Delta_CI(2,:)+S5P_Delta,...
-        'ko','Color',[0.0,0.0,0.0],'LineWidth',1,...
-        'MarkerFaceColor',[0,0,0])
-xlabel('')
-ylabel('\DeltaPol II S5P (WT-R62D) [\mum]')
-set(gca,'XTick',xLocVals,'XTickLabel',gene_names,...
-    'XLim',[0.5,6])
-hold on
-plot([0.5,6],[0,0],'k-')
-
-subplot(3,1,3)
-errorbar(xLocVals,S2P_Delta,...
-        +S2P_Delta_CI(1,:)-S2P_Delta,...
-        -S2P_Delta_CI(2,:)+S2P_Delta,...
-        'ko','Color',[0.0,0.0,0.0],'LineWidth',1,...
-        'MarkerFaceColor',[0,0,0])
-xlabel('')
-ylabel('\DeltaPol II S2P (WT-R62D) [\mum]')
-set(gca,'XTick',xLocVals,'XTickLabel',gene_names,...
-    'XLim',[0.5,6])
-hold on
-plot([0.5,6],[0,0],'k-')
 
 %% --- per nucleus overview and selection plots
 
